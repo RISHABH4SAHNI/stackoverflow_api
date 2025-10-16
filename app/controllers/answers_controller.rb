@@ -4,9 +4,9 @@ class AnswersController < ApplicationController
     question = Question.find_by(id: params[:question_id])
     if question
       answers = question.answers.order(created_at: :desc)
-      render json: answers.as_json(only: [:id, :body, :upvotes])
+      render json: AnswerSerializer.new(answers).serializable_hash, status: :ok
     else
-      render json: { error: "Question not found" }, status: :not_found
+      render json: { errors: [{ title: "Question not found" }] }, status: :not_found
     end
   end
 
@@ -17,12 +17,12 @@ class AnswersController < ApplicationController
       answer = question.answers.new(answer_params)
       answer.upvotes = 0
       if answer.save
-        render json: answer, status: :created
+        render json: AnswerSerializer.new(answer).serializable_hash, status: :created
       else
-        render json: { error: answer.errors.full_messages }, status: :unprocessable_entity
+        render json: { errors: answer.errors.full_messages.map { |msg| { title: msg } } }, status: :unprocessable_entity
       end
     else
-      render json: { error: "Question not found" }, status: :not_found
+      render json: { errors: [{ title: "Question not found" }] }, status: :not_found
     end
   end
 
@@ -31,9 +31,9 @@ class AnswersController < ApplicationController
     answer = Answer.find_by(id: params[:id])
     if answer
       answer.increment!(:upvotes)
-      render json: { message: "Answer upvoted!", upvotes: answer.upvotes }
+      render json: AnswerSerializer.new(answer).serializable_hash.merge({ meta: { message: "Answer upvoted!" } }), status: :ok
     else
-      render json: { error: "Answer not found" }, status: :not_found
+      render json: { errors: [{ title: "Answer not found" }] }, status: :not_found
     end
   end
 
