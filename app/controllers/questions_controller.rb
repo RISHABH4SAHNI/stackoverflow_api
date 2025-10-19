@@ -2,7 +2,7 @@ class QuestionsController < ApplicationController
   # GET /questions
   def index
     questions = Question.all.order(created_at: :desc)
-    render json: questions.as_json(only: [:id, :title, :body, :upvotes])
+    render json: QuestionSerializer.new(questions).serializable_hash, status: :ok
   end
 
   # POST /questions
@@ -10,9 +10,9 @@ class QuestionsController < ApplicationController
     question = Question.new(question_params)
     question.upvotes = 0
     if question.save
-      render json: question, status: :created
+      render json: QuestionSerializer.new(question).serializable_hash, status: :created
     else
-      render json: { error: question.errors.full_messages }, status: :unprocessable_entity
+      render json: { errors: question.errors.full_messages.map { |msg| { title: msg } } }, status: :unprocessable_entity
     end
   end
 
@@ -21,9 +21,9 @@ class QuestionsController < ApplicationController
     question = Question.find_by(id: params[:id])
     if question
       question.increment!(:upvotes)
-      render json: { message: "Question upvoted!", upvotes: question.upvotes }
+      render json: QuestionSerializer.new(question).serializable_hash.merge({ meta: { message: "Question upvoted!" } }), status: :ok
     else
-      render json: { error: "Question not found" }, status: :not_found
+      render json: { errors: [{ title: "Question not found" }] }, status: :not_found
     end
   end
 
